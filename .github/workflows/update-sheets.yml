@@ -10,7 +10,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
-      - run: npm install googleapis
+          cache: 'npm'
+      - run: npm ci
       - name: Run update-sheet script
         env:
           GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}

@@ -15,13 +15,47 @@ const auth = new google.auth.GoogleAuth({
 (async () => {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: process.env.SPREADSHEET_ID,
-    range: 'Sheet1!A1',
-    valueInputOption: 'RAW',
-    requestBody: {
-      values: [['Hackathon run at', new Date().toISOString()]]
-    }
+
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  const range = 'Sheet1!A1:B1';  // contoh range untuk cek
+
+  // 1. Get current values
+  const getRes = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range
   });
-  console.log('Sheet updated');
+
+  const values = getRes.data.values || [];
+  console.log('Current values:', values);
+
+  if (values.length === 0 || values[0].every(cell => cell === '')) {
+    // 2a. Jika kosong → set baru
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: 'Sheet1!A1:B1',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          ['Hackathon run at', new Date().toISOString()]
+        ]
+      }
+    });
+    console.log('Sheet was empty — set new values');
+  } else {
+    // 2b. Jika ada isi → bisa append atau overwrite ke baris baru
+    await sheets.spreadsheets.values.append({
+      spreadsheetId,
+      range: 'Sheet1!A:B',
+      valueInputOption: 'RAW',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: {
+        values: [
+          ['Hackathon run at', new Date().toISOString()]
+        ]
+      }
+    });
+    console.log('Sheet had content — appended new row');
+  }
+
+  console.log('Operation done');
 })();

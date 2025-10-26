@@ -1,0 +1,35 @@
+name: Update Google Sheet  
+on: [workflow_dispatch]  
+jobs:  
+  update-sheet:  
+    runs-on: ubuntu-latest  
+    steps:  
+      - uses: actions/checkout@v5  
+      - uses: actions/setup-node@v6  
+        with:  
+          node-version: '18'  
+      - run: npm install googleapis  
+      - name: Update sheet  
+        env:  
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}  
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}  
+        run: |  
+          node - <<'JS'  
+          const {google} = require('googleapis');  
+          const creds = JSON.parse(process.env.GOOGLE_CREDENTIALS);  
+          const auth = new google.auth.GoogleAuth({  
+            credentials: creds,  
+            scopes: ['https://www.googleapis.com/auth/spreadsheets']  
+          });  
+          (async () => {  
+            const client = await auth.getClient();  
+            const sheets = google.sheets({version:'v4', auth: client});  
+            await sheets.spreadsheets.values.update({  
+              spreadsheetId: process.env.SPREADSHEET_ID,  
+              range: 'Sheet1!A1',  
+              valueInputOption: 'RAW',  
+              requestBody: { values: [['Hackathon run at', new Date().toISOString()]] }  
+            });  
+            console.log('Sheet updated');  
+          })();  
+          JS  
